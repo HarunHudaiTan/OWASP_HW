@@ -17,7 +17,7 @@ pip install -r requirements.txt
 python A03_Example_Injection.py
 ```
 
-3. The API will be available at `http://localhost:5001`
+3. The API will be available at `http://localhost:5002`
 
 ## API Endpoint
 
@@ -173,10 +173,10 @@ def create_secure_connection():
 ### Safe Testing Commands
 ```bash
 # Test normal functionality first
-curl "http://localhost:5001/api/user/1"
+curl "http://localhost:5002/api/user/1"
 
 # Test SQL injection (in controlled environment only!)
-curl "http://localhost:5001/api/user/1%20UNION%20SELECT%201,username,password,role%20FROM%20users--"
+curl "http://localhost:5002/api/user/1%20UNION%20SELECT%201,username,password,role%20FROM%20users--"
 ```
 
 ## References

@@ -5,23 +5,23 @@ Server: python A01_Example_Broken_Access_Control.py
 Port: 5001
 
 # Test endpoints that should require authentication/authorization:
-curl http://localhost:5001/admin/dashboard
-curl http://localhost:5001/user/profile
-curl http://localhost:5001/account/1/balance
-curl http://localhost:5001/account/2/balance
-curl http://localhost:5001/account/3/balance
+curl http://localhost:5002/admin/dashboard
+curl http://localhost:5002/user/profile
+curl http://localhost:5002/account/1/balance
+curl http://localhost:5002/account/2/balance
+curl http://localhost:5002/account/3/balance
 
 # Test unauthorized actions:
-curl -X DELETE http://localhost:5001/api/posts/1
-curl -X POST http://localhost:5001/promote
-curl http://localhost:5001/verify_token
-curl http://localhost:5001/api/sensitive-data
+curl -X DELETE http://localhost:5002/api/posts/1
+curl -X POST http://localhost:5002/promote
+curl http://localhost:5002/verify_token
+curl http://localhost:5002/api/sensitive-data
 
 # Test exposed sensitive files:
-curl http://localhost:5001/backup/database.sql
+curl http://localhost:5002/backup/database.sql
 
 # Test login functionality:
-curl http://localhost:5001/login
+curl http://localhost:5002/login
 
 # Vulnerability: All endpoints are accessible without authentication
 # Impact: Unauthorized access to admin functions, user data, and sensitive files

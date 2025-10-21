@@ -511,16 +511,16 @@ class SSRFRateLimiter:
 
 ```bash
 # Test basic SSRF
-curl "http://localhost:5001/fetch?url=http://localhost:8080/admin"
+curl "http://localhost:5002/fetch?url=http://localhost:8080/admin"
 
 # Test cloud metadata access
-curl "http://localhost:5001/fetch?url=http://169.254.169.254/latest/meta-data/"
+curl "http://localhost:5002/fetch?url=http://169.254.169.254/latest/meta-data/"
 
 # Test internal network scanning
-curl "http://localhost:5001/fetch?url=http://192.168.1.1:22"
+curl "http://localhost:5002/fetch?url=http://192.168.1.1:22"
 
 # Test file system access
-curl "http://localhost:5001/fetch?url=file:///etc/passwd"
+curl "http://localhost:5002/fetch?url=file:///etc/passwd"
 ```
 
 ## References

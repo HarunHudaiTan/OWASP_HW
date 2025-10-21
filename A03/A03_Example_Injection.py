@@ -98,7 +98,7 @@ if __name__ == '__main__':
     print("=== OWASP A03 Injection Demo API ===")
     print("Available endpoint:")
     print("GET  /api/user/<id>     - Get user by ID")
-    print("\nStarting server on http://localhost:5001")
-    print("Example: curl http://localhost:5001/api/user/1")
+    print("\nStarting server on http://localhost:5002")
+    print("Example: curl http://localhost:5002/api/user/1")
     
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5002)

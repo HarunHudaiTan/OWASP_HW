@@ -75,4 +75,4 @@ def process_data():
 if __name__ == '__main__':
 
     # VULNERABLE: Running with debug=True and accessible to all hosts
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='0.0.0.0', port=5002, debug=True)

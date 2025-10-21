@@ -5,18 +5,18 @@ Server: python A05_Example_Security_Misconfiguration.py
 Port: 5001
 
 # Test endpoint that exposes debug information:
-curl http://localhost:5001/user/1
-curl http://localhost:5001/user/999  # Should show detailed error with stack trace
+curl http://localhost:5002/user/1
+curl http://localhost:5002/user/999  # Should show detailed error with stack trace
 
 # Test data processing with verbose errors:
-curl -X POST http://localhost:5001/process_data -H 'Content-Type: application/json' -d '{"data":"test"}'
+curl -X POST http://localhost:5002/process_data -H 'Content-Type: application/json' -d '{"data":"test"}'
 
 # Test with malformed data to trigger detailed errors:
-curl -X POST http://localhost:5001/process_data -H 'Content-Type: application/json' -d '{"invalid":"data"}'
-curl -X POST http://localhost:5001/process_data -H 'Content-Type: text/plain' -d 'invalid data'
+curl -X POST http://localhost:5002/process_data -H 'Content-Type: application/json' -d '{"invalid":"data"}'
+curl -X POST http://localhost:5002/process_data -H 'Content-Type: text/plain' -d 'invalid data'
 
 # Test with missing data:
-curl -X POST http://localhost:5001/process_data -H 'Content-Type: application/json' -d '{}'
+curl -X POST http://localhost:5002/process_data -H 'Content-Type: application/json' -d '{}'
 
 # Vulnerability: Debug mode enabled, verbose error messages, accessible to all hosts
 # Impact: Sensitive system information exposed, file paths revealed, stack traces visible

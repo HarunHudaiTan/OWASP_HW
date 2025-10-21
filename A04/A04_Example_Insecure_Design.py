@@ -47,4 +47,4 @@ def get_user(user_id):
     return jsonify(users.get(user_id, {"error": "User not found"}))
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5002)

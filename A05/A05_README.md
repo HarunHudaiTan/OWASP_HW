@@ -85,7 +85,7 @@ def process_data():
 
 ### Test 1: Database Connection Error
 ```bash
-curl http://localhost:5001/user/1
+curl http://localhost:5002/user/1
 ```
 
 **Expected Result:** Full stack trace showing:
@@ -96,7 +96,7 @@ curl http://localhost:5001/user/1
 
 ### Test 2: Missing Field Error
 ```bash
-curl -X POST http://localhost:5001/process_data \
+curl -X POST http://localhost:5002/process_data \
   -H "Content-Type: application/json" \
   -d '{}'
 ```
@@ -108,7 +108,7 @@ curl -X POST http://localhost:5001/process_data \
 
 ### Test 3: Division by Zero Error
 ```bash
-curl -X POST http://localhost:5001/process_data \
+curl -X POST http://localhost:5002/process_data \
   -H "Content-Type: application/json" \
   -d '{"required_field": "test", "divisor": 0}'
 ```
