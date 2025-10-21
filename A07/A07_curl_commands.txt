@@ -1,0 +1,27 @@
+A07 - Identification and Authentication Failures - Sample Curl Commands
+========================================================================
+
+Server: python A07_Example_Authentication_Failures.py
+Port: 5001
+
+# Test user registration with weak passwords:
+curl -X POST http://localhost:5001/register -H 'Content-Type: application/json' -d '{"username":"test","password":"123"}'
+curl -X POST http://localhost:5001/register -H 'Content-Type: application/json' -d '{"username":"admin","password":"admin"}'
+curl -X POST http://localhost:5001/register -H 'Content-Type: application/json' -d '{"username":"user","password":"password"}'
+
+# Test login (vulnerable to brute force):
+curl -X POST http://localhost:5001/login -H 'Content-Type: application/json' -d '{"username":"test","password":"123"}'
+curl -X POST http://localhost:5001/login -H 'Content-Type: application/json' -d '{"username":"admin","password":"wrong"}'
+
+# Test password reset (insecure process):
+curl -X POST http://localhost:5001/reset_password -H 'Content-Type: application/json' -d '{"username":"test"}'
+curl -X POST http://localhost:5001/reset_password -H 'Content-Type: application/json' -d '{"username":"admin"}'
+
+# Test brute force attempts (no rate limiting):
+curl -X POST http://localhost:5001/login -H 'Content-Type: application/json' -d '{"username":"admin","password":"password"}'
+curl -X POST http://localhost:5001/login -H 'Content-Type: application/json' -d '{"username":"admin","password":"123456"}'
+curl -X POST http://localhost:5001/login -H 'Content-Type: application/json' -d '{"username":"admin","password":"admin123"}'
+curl -X POST http://localhost:5001/login -H 'Content-Type: application/json' -d '{"username":"admin","password":"qwerty"}'
+
+# Vulnerability: Weak password policy, no rate limiting, insecure password reset
+# Impact: Accounts can be compromised via brute force or password reset abuse

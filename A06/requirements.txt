@@ -1,0 +1,4 @@
+# Vulnerable/outdated package versions - DO NOT USE IN PRODUCTION
+Flask==1.0.2  # Old version with known vulnerabilities
+requests==2.18.4  # Old version with security issues
+Pillow==5.2.0  # Old version with CVEs

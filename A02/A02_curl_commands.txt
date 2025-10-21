@@ -1,0 +1,17 @@
+A02 - Cryptographic Failures - Sample Commands
+==============================================
+
+Note: A02 is a demonstration class, not a web API.
+Run: python A02_Example_Cryptographic_Failures.py
+
+This example demonstrates weak cryptographic implementations in code:
+- MD5 password hashing (easily crackable)
+- Weak XOR encryption with fixed key
+- Caesar cipher for "secure" communication
+- Hardcoded encryption keys
+- Unencrypted HTTP transmission
+
+No curl commands needed - run the Python script directly to see the vulnerabilities.
+
+# Vulnerability: Weak cryptographic algorithms and poor key management
+# Impact: Passwords can be cracked, encrypted data can be decrypted, communications intercepted

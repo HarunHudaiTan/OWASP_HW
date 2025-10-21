@@ -1,0 +1,31 @@
+A09 - Security Logging and Monitoring Failures - Sample Curl Commands
+=====================================================================
+
+Server: python A09_Example_Logging_Failures.py
+Port: 5001
+
+# Test login attempts (insufficient logging):
+# Successful login (correct credentials: admin/password):
+curl -X POST http://localhost:5001/login -H 'Content-Type: application/json' -d '{"username":"admin","password":"password"}'
+# Failed login attempts:
+curl -X POST http://localhost:5001/login -H 'Content-Type: application/json' -d '{"username":"admin","password":"wrong"}'
+curl -X POST http://localhost:5001/login -H 'Content-Type: application/json' -d '{"username":"hacker","password":"attempt"}'
+
+# Test multiple failed login attempts (should be logged but aren't):
+curl -X POST http://localhost:5001/login -H 'Content-Type: application/json' -d '{"username":"admin","password":"admin"}'
+curl -X POST http://localhost:5001/login -H 'Content-Type: application/json' -d '{"username":"admin","password":"wrong2"}'
+curl -X POST http://localhost:5001/login -H 'Content-Type: application/json' -d '{"username":"admin","password":"wrong3"}'
+
+# Test user deletion (no audit trail):
+curl -X DELETE http://localhost:5001/admin/delete_user -H 'Content-Type: application/json' -d '{"user_id":1}'
+curl -X DELETE http://localhost:5001/admin/delete_user -H 'Content-Type: application/json' -d '{"user_id":999}'
+
+# Test money transfer (poor logging):
+curl -X POST http://localhost:5001/transfer -H 'Content-Type: application/json' -d '{"amount":1000}'
+curl -X POST http://localhost:5001/transfer -H 'Content-Type: application/json' -d '{"amount":1000000}'
+
+# Test error endpoint (log injection):
+curl http://localhost:5001/error
+
+# Vulnerability: Insufficient logging, no monitoring, no alerting
+# Impact: Security incidents go undetected, no audit trail for investigations

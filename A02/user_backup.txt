@@ -1,0 +1,7 @@
+# Database Backup - SENSITIVE DATA
+# Username, Password Hash, Credit Card, SSN
+alice,482c811da5d5b4bc6d497ffa98491e38,chq1cOrQUvGhGHXISHHHZEd+EXIp0Q203HlPr953yAo=,None
+alice,482c811da5d5b4bc6d497ffa98491e38
+bob,21232f297a57a5a743894a0e4a801fc3
+alice,482c811da5d5b4bc6d497ffa98491e38
+bob,21232f297a57a5a743894a0e4a801fc3

