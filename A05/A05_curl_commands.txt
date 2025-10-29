@@ -20,3 +20,22 @@ curl -X POST http://localhost:5002/process_data -H 'Content-Type: application/js
 
 # Vulnerability: Debug mode enabled, verbose error messages, accessible to all hosts
 # Impact: Sensitive system information exposed, file paths revealed, stack traces visible
+
+# SECURE ENDPOINTS (Solutions):
+# Test secure endpoints with proper error handling:
+curl http://localhost:5002/secure/user/1
+curl http://localhost:5002/secure/user/999  # Should show generic error message
+
+# Test secure data processing:
+curl -X POST http://localhost:5002/secure/process_data \
+  -H 'Content-Type: application/json' \
+  -d '{"required_field":"test","divisor":2}'
+
+# Test error handling (should not expose stack traces):
+curl -X POST http://localhost:5002/secure/process_data \
+  -H 'Content-Type: application/json' \
+  -d '{"invalid":"data"}'
+
+curl -X POST http://localhost:5002/secure/process_data \
+  -H 'Content-Type: application/json' \
+  -d '{"required_field":"test","divisor":0}'

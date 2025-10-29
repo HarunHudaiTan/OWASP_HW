@@ -39,3 +39,26 @@ curl http://localhost:5002/fetch?url=dict://localhost:11211/stat
 
 # Vulnerability: No URL validation, unrestricted outbound requests
 # Impact: Internal network access, cloud metadata exposure, file system access
+
+# SECURE ENDPOINTS (Solutions):
+# Test secure URL fetching (only whitelisted domains):
+curl 'http://localhost:5002/secure/fetch?url=https://api.example.com/data'
+
+# Test blocked URLs (should fail with validation errors):
+curl 'http://localhost:5002/secure/fetch?url=http://localhost:8080/admin'
+curl 'http://localhost:5002/secure/fetch?url=https://malicious.com/data'
+curl 'http://localhost:5002/secure/fetch?url=http://192.168.1.1'
+curl 'http://localhost:5002/secure/fetch?url=file:///etc/passwd'
+
+# Test secure webhook with URL validation:
+curl -X POST http://localhost:5002/secure/webhook \
+  -H 'Content-Type: application/json' \
+  -d '{"callback_url":"https://api.example.com/callback","data":{"test":"value"}}'
+
+# Test blocked webhook URL (should fail):
+curl -X POST http://localhost:5002/secure/webhook \
+  -H 'Content-Type: application/json' \
+  -d '{"callback_url":"http://localhost:8080/internal","data":{"test":"value"}}'
+
+# Test secure proxy with validation:
+curl 'http://localhost:5002/secure/proxy?target=https://secure.example.org/api'

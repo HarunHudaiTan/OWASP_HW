@@ -1,17 +1,53 @@
-A02 - Cryptographic Failures - Sample Commands
-==============================================
+A02 - Cryptographic Failures - Sample Curl Commands
+==================================================
 
-Note: A02 is a demonstration class, not a web API.
-Run: python A02_Example_Cryptographic_Failures.py
+Server: python A02_Example_Cryptographic_Failures.py
+Port: 5002
 
-This example demonstrates weak cryptographic implementations in code:
-- MD5 password hashing (easily crackable)
-- Weak XOR encryption with fixed key
-- Caesar cipher for "secure" communication
-- Hardcoded encryption keys
-- Unencrypted HTTP transmission
+# VULNERABLE ENDPOINTS - Demonstrating Cryptographic Failures:
 
-No curl commands needed - run the Python script directly to see the vulnerabilities.
+# Test user registration with weak MD5 password hashing:
+curl -X POST http://localhost:5002/register \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"testuser","password":"password123","email":"test@example.com"}'
 
-# Vulnerability: Weak cryptographic algorithms and poor key management
-# Impact: Passwords can be cracked, encrypted data can be decrypted, communications intercepted
+# Test login with MD5 hash comparison:
+curl -X POST http://localhost:5002/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"admin123"}'
+
+curl -X POST http://localhost:5002/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"alice","password":"password"}'
+
+# View user profiles with weak base64 "encryption":
+curl http://localhost:5002/profile/1
+curl http://localhost:5002/profile/2
+
+# Vulnerability: MD5 password hashing, base64 encoding instead of encryption
+# Impact: Passwords easily cracked, sensitive data easily decoded
+
+# SECURE ENDPOINTS (Solutions):
+
+# Test secure registration with bcrypt password hashing:
+curl -X POST http://localhost:5002/secure/register \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"secureuser","password":"SecurePass123","email":"secure@example.com"}'
+
+# Test secure login with bcrypt verification:
+curl -X POST http://localhost:5002/secure/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"secureuser","password":"SecurePass123"}'
+
+# Update payment info with strong encryption:
+curl -X POST http://localhost:5002/secure/update_payment \
+  -H 'Content-Type: application/json' \
+  -d '{"user_id":1,"credit_card":"1234-5678-9012-3456"}'
+
+# View secure profile with proper encryption:
+curl http://localhost:5002/secure/profile/1
+
+# The secure implementation demonstrates:
+# - bcrypt for password hashing with salt
+# - Fernet (AES) for symmetric encryption
+# - Proper key generation and management

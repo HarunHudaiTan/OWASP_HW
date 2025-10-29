@@ -23,3 +23,24 @@ curl -X POST http://localhost:5002/download_update -H 'Content-Type: application
 
 # Vulnerability: No integrity verification of downloads, unsafe deserialization
 # Impact: Malicious code execution, data corruption, supply chain attacks
+
+# SECURE ENDPOINTS (Solutions):
+# First, create signed data for testing:
+curl -X POST http://localhost:5002/secure/create_signed_data \
+  -H 'Content-Type: application/json' \
+  -d '{"message":"Hello World","user_id":123}'
+
+# Test secure data loading (use data and signature from above):
+curl -X POST http://localhost:5002/secure/load_data \
+  -H 'Content-Type: application/json' \
+  -d '{"data":"SIGNED_DATA_HERE","signature":"SIGNATURE_HERE"}'
+
+# Test secure update download (requires hash and signature):
+curl -X POST http://localhost:5002/secure/download_update \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://trusted-updates.example.com/update.zip","sha256_hash":"abc123...","signature":"def456..."}'
+
+# Test with invalid signature (should fail):
+curl -X POST http://localhost:5002/secure/load_data \
+  -H 'Content-Type: application/json' \
+  -d '{"data":"test","signature":"invalid_signature"}'

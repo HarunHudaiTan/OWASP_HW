@@ -29,3 +29,30 @@ curl http://localhost:5002/error
 
 # Vulnerability: Insufficient logging, no monitoring, no alerting
 # Impact: Security incidents go undetected, no audit trail for investigations
+
+# SECURE ENDPOINTS (Solutions):
+# Test secure login with comprehensive logging:
+curl -X POST http://localhost:5002/secure/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"password"}'
+
+# Test failed login (will be logged with details):
+curl -X POST http://localhost:5002/secure/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"wrong"}'
+
+# Test secure admin actions (comprehensive audit logging):
+curl -X DELETE http://localhost:5002/secure/admin/delete_user \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"testuser"}'
+
+# Test secure financial transaction logging:
+curl -X POST http://localhost:5002/secure/transfer \
+  -H 'Content-Type: application/json' \
+  -d '{"amount":1000,"to_account":"12345"}'
+
+# Test secure error handling:
+curl http://localhost:5002/secure/error
+
+# View security log summary (admin only):
+curl http://localhost:5002/secure/logs/summary

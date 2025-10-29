@@ -1,0 +1,2 @@
+alice_secure,$2b$12$yj.auU9snk0ToNSIC84x0OF.ho6P1Bta16pXv8tNUVc276KR9zL8O
+alice_secure,$2b$12$d0IWt8AJYYDucA9/MKPyLe/qkKJjiNVW3MLy4qLJ/A5n25dOKq.O2

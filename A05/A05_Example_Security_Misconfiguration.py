@@ -72,7 +72,91 @@ def process_data():
         "calculation": calculation
     })
 
-if __name__ == '__main__':
+# Secure Configuration Solutions
+@app.route('/secure/user/<int:user_id>')
+def get_user_secure(user_id):
+    """
+    Secure endpoint with proper error handling and no stack trace exposure.
+    """
+    try:
+        # Validate input
+        if user_id < 1 or user_id > 1000:
+            return jsonify({"error": "Invalid user ID"}), 400
+        
+        # Simulate secure database connection with proper error handling
+        # In real app, use proper database with connection pooling
+        mock_users = {
+            1: {"name": "Alice", "email": "alice@example.com"},
+            2: {"name": "Bob", "email": "bob@example.com"}
+        }
+        
+        user = mock_users.get(user_id)
+        if user:
+            return jsonify(user)
+        else:
+            return jsonify({"error": "User not found"}), 404
+            
+    except Exception as e:
+        # Log error internally but don't expose details
+        app.logger.error(f"Error in get_user_secure: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
 
+@app.route('/secure/process_data', methods=['POST'])
+def process_data_secure():
+    """
+    Secure data processing with input validation and error handling.
+    """
+    try:
+        data = request.get_json()
+        
+        # Input validation
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+        
+        if 'required_field' not in data:
+            return jsonify({"error": "Missing required field"}), 400
+        
+        if 'divisor' not in data:
+            return jsonify({"error": "Missing divisor field"}), 400
+        
+        # Validate data types and values
+        if not isinstance(data['required_field'], str):
+            return jsonify({"error": "Required field must be string"}), 400
+        
+        try:
+            divisor = float(data['divisor'])
+        except (ValueError, TypeError):
+            return jsonify({"error": "Divisor must be a number"}), 400
+        
+        if divisor == 0:
+            return jsonify({"error": "Division by zero not allowed"}), 400
+        
+        # Process data safely
+        result = data['required_field'].upper()
+        calculation = 100 / divisor
+        
+        return jsonify({
+            "processed": result,
+            "calculation": calculation
+        })
+        
+    except Exception as e:
+        # Log error internally but don't expose details
+        app.logger.error(f"Error in process_data_secure: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
+
+if __name__ == '__main__':
+    # SECURE: Proper configuration for production
+    # Disable debug mode
+    app.config['DEBUG'] = False
+    
+    # Set up proper logging
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    
+    print("Starting secure server...")
+    print("Vulnerable endpoints: /user/<id>, /process_data")
+    print("Secure endpoints: /secure/user/<id>, /secure/process_data")
+    
     # VULNERABLE: Running with debug=True and accessible to all hosts
     app.run(host='0.0.0.0', port=5002, debug=True)

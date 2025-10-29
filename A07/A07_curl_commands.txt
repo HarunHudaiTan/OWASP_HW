@@ -25,3 +25,33 @@ curl -X POST http://localhost:5002/login -H 'Content-Type: application/json' -d 
 
 # Vulnerability: Weak password policy, no rate limiting, insecure password reset
 # Impact: Accounts can be compromised via brute force or password reset abuse
+
+# SECURE ENDPOINTS (Solutions):
+# Test secure registration with strong password policy:
+curl -X POST http://localhost:5002/secure/register \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"testuser","password":"SecurePass123"}'
+
+# Test weak password (should fail):
+curl -X POST http://localhost:5002/secure/register \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"weakuser","password":"123"}'
+
+# Test secure login:
+curl -X POST http://localhost:5002/secure/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"testuser","password":"SecurePass123"}'
+
+# Test rate limiting (try multiple failed attempts):
+curl -X POST http://localhost:5002/secure/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"testuser","password":"wrong1"}'
+
+curl -X POST http://localhost:5002/secure/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"testuser","password":"wrong2"}'
+
+# Test secure password reset:
+curl -X POST http://localhost:5002/secure/reset_password \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"testuser","email":"test@example.com"}'

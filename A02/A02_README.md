@@ -1,342 +1,343 @@
-# A02: Cryptographic Failures - Detailed Analysis
+# A02: Cryptographic Failures - Flask SQLite Example
 
 ## Overview
-This directory contains examples of common cryptographic failures as outlined in the [OWASP Top 10 2021 - A02 Cryptographic Failures](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/).
+This directory contains a Flask API demonstrating common cryptographic failures using SQLite database storage. The example shows both vulnerable and secure implementations side-by-side.
 
 ## Vulnerabilities Demonstrated
 
-### 1. `store_user_password()` - Weak Password Hashing
+### 1. Weak Password Hashing - `/register` endpoint
 
 **Vulnerable Code:**
 ```python
-def store_user_password(self, username, password):
-    # Simple hash storage approach
+@app.route('/register', methods=['POST'])
+def register():
+    """User registration with weak MD5 password hashing."""
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    email = data.get('email')
+    
+    # Vulnerable: MD5 password hashing
     password_hash = hashlib.md5(password.encode()).hexdigest()
     
-    # Store in a simple format
-    with open(self.database_file, "a") as f:
-        f.write(f"{username},{password_hash}\n")
-    
-    print(f"Password stored for user: {username}")
-    return password_hash
-```
-
-**Vulnerabilities Present:**
-- **CWE-327: Use of a Broken or Risky Cryptographic Algorithm**
-- **CWE-759: Use of a One-Way Hash without a Salt**
-- **CWE-916: Use of Password Hash With Insufficient Computational Effort**
-
-**Issues:**
-1. **MD5 Hash Function**: Uses MD5, which is cryptographically broken and vulnerable to collision attacks
-2. **No Salt**: Passwords are hashed without salt, making them vulnerable to rainbow table attacks
-3. **Fast Hashing**: MD5 is computationally fast, allowing brute force attacks with modern hardware
-4. **Predictable Output**: Same passwords always produce the same hash
-
-**Real-World Impact:**
-- Attackers can use precomputed rainbow tables to crack common passwords instantly
-- GPU-based attacks can crack MD5 hashes at billions of attempts per second
-- Database breaches expose all user passwords immediately
-
-**Secure Solution:**
-```python
-import bcrypt
-import secrets
-
-def store_user_password_secure(self, username, password):
-    # Generate a random salt
-    salt = bcrypt.gensalt(rounds=12)  # 12 rounds = good security/performance balance
-    
-    # Hash password with salt using bcrypt
-    password_hash = bcrypt.hashpw(password.encode('utf-8'), salt)
-    
-    # Store username and hash (salt is included in bcrypt hash)
-    with open(self.database_file, "a") as f:
-        f.write(f"{username},{password_hash.decode('utf-8')}\n")
-    
-    print(f"Password securely stored for user: {username}")
-    return password_hash
-
-def verify_password_secure(self, username, password, stored_hash):
-    # Verify password against stored hash
-    return bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8'))
-```
-
-**Why This Solution Works:**
-- **bcrypt**: Adaptive hashing function designed for passwords
-- **Built-in Salt**: Each hash includes a unique random salt
-- **Work Factor**: Configurable rounds make brute force attacks expensive
-- **Future-Proof**: Can increase rounds as hardware improves
-
-### 2. `encrypt_sensitive_data()` - Weak Encryption Implementation
-
-**Vulnerable Code:**
-```python
-def encrypt_sensitive_data(self, credit_card_number):
-    # Simple encryption approach using base64
-    encoded_data = base64.b64encode(credit_card_number.encode()).decode()
-    
-    # Additional layer using simple XOR with fixed key
-    key = ord('K')  # Fixed key for simplicity
-    encrypted = ""
-    for char in encoded_data:
-        encrypted += chr(ord(char) ^ key)
-    
-    final_encrypted = base64.b64encode(encrypted.encode()).decode()
-    print(f"Credit card encrypted and stored safely!")
-    return final_encrypted
-```
-
-**Vulnerabilities Present:**
-- **CWE-327: Use of a Broken or Risky Cryptographic Algorithm**
-- **CWE-321: Use of Hard-coded Cryptographic Key**
-- **CWE-326: Inadequate Encryption Strength**
-
-**Issues:**
-1. **Base64 Encoding**: Base64 is encoding, not encryption - easily reversible
-2. **XOR with Fixed Key**: Simple XOR cipher with a single-byte key is trivially breakable
-3. **No Authentication**: No integrity protection - data can be modified without detection
-4. **Predictable Key**: Fixed key 'K' provides no security
-
-**Real-World Impact:**
-- Credit card numbers can be decrypted by anyone with basic programming knowledge
-- No protection against data tampering
-- Regulatory compliance failures (PCI DSS violations)
-
-**Secure Solution:**
-```python
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-import os
-import base64
-
-def encrypt_sensitive_data_secure(self, credit_card_number, master_password):
-    # Generate a random salt
-    salt = os.urandom(16)
-    
-    # Derive key from master password using PBKDF2
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=salt,
-        iterations=100000,  # High iteration count for security
-    )
-    key = base64.urlsafe_b64encode(kdf.derive(master_password.encode()))
-    
-    # Create Fernet cipher (uses AES-128 in CBC mode with HMAC-SHA256)
-    cipher = Fernet(key)
-    
-    # Encrypt the data
-    encrypted_data = cipher.encrypt(credit_card_number.encode())
-    
-    # Store salt + encrypted data
-    result = base64.b64encode(salt + encrypted_data).decode()
-    print(f"Credit card securely encrypted!")
-    return result
-
-def decrypt_sensitive_data_secure(self, encrypted_data, master_password):
-    # Decode the stored data
-    data = base64.b64decode(encrypted_data.encode())
-    
-    # Extract salt and encrypted content
-    salt = data[:16]
-    encrypted_content = data[16:]
-    
-    # Recreate the key
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=salt,
-        iterations=100000,
-    )
-    key = base64.urlsafe_b64encode(kdf.derive(master_password.encode()))
-    
-    # Decrypt
-    cipher = Fernet(key)
-    decrypted_data = cipher.decrypt(encrypted_content)
-    return decrypted_data.decode()
-```
-
-**Why This Solution Works:**
-- **AES Encryption**: Uses industry-standard AES encryption
-- **Key Derivation**: PBKDF2 with high iterations derives keys from passwords
-- **Random Salt**: Each encryption uses a unique salt
-- **Authenticated Encryption**: Fernet provides both confidentiality and integrity
-- **Proper Key Management**: Keys derived securely, not hardcoded
-
-### 3. `secure_communication()` - Insecure Data Transmission
-
-**Vulnerable Code:**
-```python
-def secure_communication(self, message, recipient):
-    # Create a secure communication channel
-    # Use simple substitution cipher for speed
-    encrypted_message = ""
-    shift = 3  # Caesar cipher with shift of 3
-    
-    for char in message:
-        if char.isalpha():
-            ascii_offset = 65 if char.isupper() else 97
-            encrypted_char = chr((ord(char) - ascii_offset + shift) % 26 + ascii_offset)
-            encrypted_message += encrypted_char
-        else:
-            encrypted_message += char
-    
-    # Simulate sending over HTTP for faster transmission
-    transmission_log = f"HTTP://secure-chat.com/send?to={recipient}&msg={encrypted_message}"
-    print(f"Message sent securely to {recipient}")
-    return transmission_log
-```
-
-**Vulnerabilities Present:**
-- **CWE-319: Cleartext Transmission of Sensitive Information**
-- **CWE-327: Use of a Broken or Risky Cryptographic Algorithm**
-- **CWE-523: Unprotected Transport of Credentials**
-
-**Issues:**
-1. **Caesar Cipher**: Ancient cipher that can be broken in seconds
-2. **HTTP Transmission**: Sends data over unencrypted HTTP protocol
-3. **URL Parameters**: Sensitive data exposed in URL, logged in server logs and browser history
-4. **No Forward Secrecy**: Same key used for all communications
-
-**Real-World Impact:**
-- Messages can be intercepted and read by anyone monitoring network traffic
-- Man-in-the-middle attacks can modify messages in transit
-- Sensitive information permanently stored in server logs and browser history
-
-**Secure Solution:**
-```python
-import requests
-import json
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-import os
-
-def secure_communication_secure(self, message, recipient, recipient_public_key):
-    # Generate a random AES key for this message (forward secrecy)
-    aes_key = os.urandom(32)  # 256-bit key
-    iv = os.urandom(16)       # 128-bit IV
-    
-    # Encrypt message with AES-GCM (authenticated encryption)
-    cipher = Cipher(algorithms.AES(aes_key), modes.GCM(iv))
-    encryptor = cipher.encryptor()
-    ciphertext = encryptor.update(message.encode()) + encryptor.finalize()
-    
-    # Get the authentication tag
-    auth_tag = encryptor.tag
-    
-    # Encrypt the AES key with recipient's RSA public key
-    encrypted_aes_key = recipient_public_key.encrypt(
-        aes_key,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-    
-    # Prepare secure payload
-    secure_payload = {
-        'to': recipient,
-        'encrypted_key': encrypted_aes_key.hex(),
-        'iv': iv.hex(),
-        'ciphertext': ciphertext.hex(),
-        'auth_tag': auth_tag.hex()
-    }
-    
-    # Send over HTTPS with proper headers
-    headers = {
-        'Content-Type': 'application/json',
-        'User-Agent': 'SecureMessenger/1.0'
-    }
+    conn = sqlite3.connect(demo.db_name)
+    cursor = conn.cursor()
     
     try:
-        # Use HTTPS POST request (not GET with URL parameters)
-        response = requests.post(
-            'https://secure-chat.com/api/send',
-            json=secure_payload,
-            headers=headers,
-            timeout=30,
-            verify=True  # Verify SSL certificate
+        cursor.execute(
+            'INSERT INTO users (username, password, email) VALUES (?, ?, ?)',
+            (username, password_hash, email)
         )
-        
-        if response.status_code == 200:
-            print(f"Message sent securely to {recipient}")
-            return response.json()
-        else:
-            print(f"Failed to send message: {response.status_code}")
-            return None
-            
-    except requests.exceptions.SSLError:
-        print("SSL certificate verification failed")
-        return None
-    except requests.exceptions.RequestException as e:
-        print(f"Network error: {e}")
-        return None
-
-def decrypt_received_message(self, encrypted_payload, private_key):
-    # Decrypt the AES key with our private RSA key
-    encrypted_aes_key = bytes.fromhex(encrypted_payload['encrypted_key'])
-    aes_key = private_key.decrypt(
-        encrypted_aes_key,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-    
-    # Extract components
-    iv = bytes.fromhex(encrypted_payload['iv'])
-    ciphertext = bytes.fromhex(encrypted_payload['ciphertext'])
-    auth_tag = bytes.fromhex(encrypted_payload['auth_tag'])
-    
-    # Decrypt and verify message
-    cipher = Cipher(algorithms.AES(aes_key), modes.GCM(iv, auth_tag))
-    decryptor = cipher.decryptor()
-    plaintext = decryptor.update(ciphertext) + decryptor.finalize()
-    
-    return plaintext.decode()
+        conn.commit()
+        return jsonify({'message': 'User registered', 'hash': password_hash})
+    except sqlite3.IntegrityError:
+        return jsonify({'error': 'Username exists'}), 400
+    finally:
+        conn.close()
 ```
 
-**Why This Solution Works:**
-- **HTTPS**: All communication encrypted in transit with TLS
-- **Hybrid Encryption**: RSA for key exchange, AES for message encryption
-- **Forward Secrecy**: New AES key for each message
-- **Authenticated Encryption**: GCM mode prevents tampering
-- **POST Requests**: Sensitive data in request body, not URL
-- **Certificate Validation**: Prevents man-in-the-middle attacks
-- **Error Handling**: Proper SSL and network error handling
+**Issues:**
+- **MD5 is cryptographically broken** - vulnerable to collision attacks
+- **No salt** - same passwords produce same hashes (rainbow table attacks)
+- **Fast hashing** - allows billions of brute force attempts per second
+- **Hash exposed** - returns the hash in response (information leakage)
 
-## Additional Security Considerations
+**Attack Example:**
+```bash
+# Register user - MD5 hash is predictable and weak
+curl -X POST http://localhost:5002/register \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"victim","password":"password123","email":"victim@example.com"}'
 
-### Key Management Issues
-The class demonstrates poor key management practices:
-- Hardcoded keys in source code
-- No key rotation mechanisms
-- Keys stored alongside encrypted data
+# Response shows MD5 hash: "482c811da5d5b4bc6d497ffa98491e38"
+# This hash can be cracked in seconds using online tools
+```
 
-### Entropy and Randomness
-- No use of cryptographically secure random number generators
-- Predictable patterns in encryption
+### 2. Weak Login Verification - `/login` endpoint
 
-### Error Handling
-- No proper error handling for cryptographic operations
-- Potential information leakage through error messages
+**Vulnerable Code:**
+```python
+@app.route('/login', methods=['POST'])
+def login():
+    """Login with weak password verification."""
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    
+    # Vulnerable: MD5 comparison
+    password_hash = hashlib.md5(password.encode()).hexdigest()
+    
+    conn = sqlite3.connect(demo.db_name)
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT id FROM users WHERE username = ? AND password = ?',
+        (username, password_hash)
+    )
+    user = cursor.fetchone()
+    conn.close()
+    
+    if user:
+        return jsonify({'message': 'Login successful', 'user_id': user[0]})
+    return jsonify({'error': 'Invalid credentials'}), 401
+```
 
-## Prevention Strategies
+**Issues:**
+- **Same weak MD5 hashing** for password verification
+- **Timing attacks possible** - different response times for existing vs non-existing users
+- **No rate limiting** - allows unlimited brute force attempts
 
-1. **Use Established Libraries**: Never implement your own cryptography
-2. **Follow Current Standards**: Use NIST-approved algorithms and key lengths
-3. **Proper Key Management**: Secure key generation, storage, and rotation
-4. **Regular Security Audits**: Code reviews and penetration testing
-5. **Stay Updated**: Monitor for new vulnerabilities and update dependencies
+### 3. Weak Data Encryption - `/profile/<id>` endpoint
 
-## References
-- [OWASP Cryptographic Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html)
-- [OWASP Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
-- [OWASP Transport Layer Protection Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html)
+**Vulnerable Code:**
+```python
+@app.route('/profile/<int:user_id>')
+def get_profile(user_id):
+    """Get user profile with weak encryption."""
+    conn = sqlite3.connect(demo.db_name)
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT username, email, credit_card FROM users WHERE id = ?',
+        (user_id,)
+    )
+    user = cursor.fetchone()
+    conn.close()
+    
+    if user:
+        username, email, encrypted_cc = user
+        # Vulnerable: Simple base64 "encryption"
+        credit_card = base64.b64decode(encrypted_cc).decode() if encrypted_cc else None
+        
+        return jsonify({
+            'username': username,
+            'email': email,
+            'credit_card': credit_card  # Sensitive data exposed!
+        })
+    return jsonify({'error': 'User not found'}), 404
+```
+
+**Issues:**
+- **Base64 is encoding, not encryption** - easily reversible
+- **No key required** - anyone can decode the data
+- **Sensitive data exposure** - credit card numbers shown in plain text
+- **No access control** - any user ID can be accessed
+
+**Database Initialization with Weak Crypto:**
+```python
+# Sample users with weak crypto in database
+sample_users = [
+    ('admin', hashlib.md5('admin123'.encode()).hexdigest(), 'admin@example.com', 
+     base64.b64encode('4532-1234-5678-9012'.encode()).decode()),
+    ('alice', hashlib.md5('password'.encode()).hexdigest(), 'alice@example.com', 
+     base64.b64encode('5555-4444-3333-2222'.encode()).decode())
+]
+```
+
+## Secure Solutions
+
+### 1. Strong Password Hashing - `/secure/register` endpoint
+
+**Secure Code:**
+```python
+@app.route('/secure/register', methods=['POST'])
+def secure_register():
+    """Secure user registration with bcrypt."""
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    email = data.get('email')
+    
+    # Secure: bcrypt password hashing
+    password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    
+    conn = sqlite3.connect(secure_crypto.secure_db)
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute(
+            'INSERT INTO secure_users (username, password_hash, email) VALUES (?, ?, ?)',
+            (username, password_hash.decode('utf-8'), email)
+        )
+        conn.commit()
+        return jsonify({'message': 'User registered securely'})  # No hash exposed
+    except sqlite3.IntegrityError:
+        return jsonify({'error': 'Username exists'}), 400
+    finally:
+        conn.close()
+```
+
+**Improvements:**
+- **bcrypt with salt** - each password gets unique salt automatically
+- **Adaptive hashing** - computationally expensive to crack
+- **No hash exposure** - doesn't return hash in response
+- **Future-proof** - can increase cost factor as hardware improves
+
+### 2. Secure Login Verification - `/secure/login` endpoint
+
+**Secure Code:**
+```python
+@app.route('/secure/login', methods=['POST'])
+def secure_login():
+    """Secure login with bcrypt verification."""
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    
+    conn = sqlite3.connect(secure_crypto.secure_db)
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT id, password_hash FROM secure_users WHERE username = ?',
+        (username,)
+    )
+    user = cursor.fetchone()
+    conn.close()
+    
+    # Secure: bcrypt password verification with constant-time comparison
+    if user and bcrypt.checkpw(password.encode('utf-8'), user[1].encode('utf-8')):
+        return jsonify({'message': 'Login successful', 'user_id': user[0]})
+    return jsonify({'error': 'Invalid credentials'}), 401
+```
+
+**Improvements:**
+- **bcrypt.checkpw()** - secure password verification
+- **Constant-time comparison** - prevents timing attacks
+- **Proper error handling** - same response for all failure cases
+
+### 3. Strong Data Encryption - `/secure/profile/<id>` endpoint
+
+**Secure Code:**
+```python
+@app.route('/secure/profile/<int:user_id>')
+def secure_get_profile(user_id):
+    """Get user profile with strong encryption."""
+    conn = sqlite3.connect(secure_crypto.secure_db)
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT username, email, credit_card FROM secure_users WHERE id = ?',
+        (user_id,)
+    )
+    user = cursor.fetchone()
+    conn.close()
+    
+    if user:
+        username, email, encrypted_cc = user
+        # Secure: Fernet encryption/decryption
+        credit_card = None
+        if encrypted_cc:
+            try:
+                credit_card = secure_crypto.fernet.decrypt(encrypted_cc.encode()).decode()
+            except:
+                credit_card = "Decryption failed"  # Safe error handling
+        
+        return jsonify({
+            'username': username,
+            'email': email,
+            'credit_card': credit_card
+        })
+    return jsonify({'error': 'User not found'}), 404
+```
+
+**Secure Encryption Implementation:**
+```python
+class CryptographicSolutions:
+    """Secure implementations that fix cryptographic failures."""
+    
+    def __init__(self):
+        # Generate secure random key for Fernet (AES-128 in CBC mode)
+        self.encryption_key = Fernet.generate_key()
+        self.fernet = Fernet(self.encryption_key)
+        self.secure_db = "users_secure.db"
+        self.init_secure_database()
+```
+
+**Secure Payment Update:**
+```python
+@app.route('/secure/update_payment', methods=['POST'])
+def secure_update_payment():
+    """Update payment info with strong encryption."""
+    data = request.get_json()
+    user_id = data.get('user_id')
+    credit_card = data.get('credit_card')
+    
+    # Secure: Fernet encryption (AES + HMAC)
+    encrypted_cc = secure_crypto.fernet.encrypt(credit_card.encode()).decode()
+    
+    conn = sqlite3.connect(secure_crypto.secure_db)
+    cursor = conn.cursor()
+    cursor.execute(
+        'UPDATE secure_users SET credit_card = ? WHERE id = ?',
+        (encrypted_cc, user_id)
+    )
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'message': 'Payment info updated securely'})
+```
+
+**Improvements:**
+- **Fernet encryption** - uses AES-128 in CBC mode with HMAC-SHA256
+- **Authenticated encryption** - prevents tampering
+- **Random key generation** - cryptographically secure keys
+- **Proper error handling** - doesn't leak encryption details
+
+## Testing the Vulnerabilities
+
+### Test Weak Crypto:
+```bash
+# 1. Register with weak MD5 - hash is predictable
+curl -X POST http://localhost:5002/register \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"test","password":"password123","email":"test@example.com"}'
+
+# 2. Login with MD5 verification
+curl -X POST http://localhost:5002/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"test","password":"password123"}'
+
+# 3. View profile - credit card in base64 (easily decoded)
+curl http://localhost:5002/profile/1
+```
+
+### Test Strong Crypto:
+```bash
+# 1. Register with bcrypt - secure hashing
+curl -X POST http://localhost:5002/secure/register \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"secure","password":"SecurePass123","email":"secure@example.com"}'
+
+# 2. Login with bcrypt verification
+curl -X POST http://localhost:5002/secure/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"secure","password":"SecurePass123"}'
+
+# 3. Update payment with strong encryption
+curl -X POST http://localhost:5002/secure/update_payment \
+  -H 'Content-Type: application/json' \
+  -d '{"user_id":1,"credit_card":"1234-5678-9012-3456"}'
+
+# 4. View profile - credit card properly encrypted
+curl http://localhost:5002/secure/profile/1
+```
+
+## Key Differences Summary
+
+| Aspect | Vulnerable Implementation | Secure Implementation |
+|--------|---------------------------|----------------------|
+| **Password Hashing** | `hashlib.md5()` - no salt | `bcrypt.hashpw()` - with salt |
+| **Password Verification** | MD5 comparison | `bcrypt.checkpw()` |
+| **Data Encryption** | `base64.b64encode()` | `fernet.encrypt()` (AES) |
+| **Key Management** | No keys needed | Secure random key generation |
+| **Database** | `users_crypto.db` | `users_secure.db` |
+| **Error Handling** | Exposes internal details | Safe generic messages |
+
+## Running the Example
+
+```bash
+# Start the server
+python A02_Example_Cryptographic_Failures.py
+
+# Server runs on http://localhost:5002
+# Test both vulnerable and secure endpoints
+```
 
 ---
-**⚠️ WARNING: The code in this directory contains intentional security vulnerabilities for educational purposes. Never use these patterns in production systems!**
+**⚠️ WARNING: Contains intentional vulnerabilities for educational purposes only!**

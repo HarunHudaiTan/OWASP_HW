@@ -23,3 +23,19 @@ curl 'http://localhost:5002/download?file=..\\..\\..\\windows\\system32\\drivers
 
 # Vulnerability: Unsafe XML parsing and unvalidated file path handling
 # Impact: Local file disclosure, potential remote code execution via XXE
+
+# SECURE ENDPOINTS (Solutions):
+# Test secure XML processing:
+curl -X POST http://localhost:5002/secure/process_xml \
+  -H 'Content-Type: application/xml' \
+  -d '<user><name>test</name></user>'
+
+# Test secure download with URL validation:
+curl 'http://localhost:5002/secure/download?url=https://api.example.com/data.json'
+
+# Test blocked URLs (should fail):
+curl 'http://localhost:5002/secure/download?url=http://malicious.com/file'
+curl 'http://localhost:5002/secure/download?url=https://blocked.com/file'
+
+# Check dependency security:
+curl http://localhost:5002/secure/check_dependencies

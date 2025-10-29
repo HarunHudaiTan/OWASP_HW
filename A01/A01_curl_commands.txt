@@ -25,3 +25,19 @@ curl http://localhost:5002/login
 
 # Vulnerability: All endpoints are accessible without authentication
 # Impact: Unauthorized access to admin functions, user data, and sensitive files
+
+# SECURE ENDPOINTS (Solutions):
+# First get a token:
+curl -X POST http://localhost:5002/secure/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "correct_password"}'
+
+# Use the token for authenticated requests:
+curl http://localhost:5002/secure/admin/dashboard \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+
+curl http://localhost:5002/secure/user/profile \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+
+curl http://localhost:5002/secure/account/1/balance \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"

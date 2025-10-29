@@ -140,6 +140,87 @@ class AccessControlExamples:
         """
 
 
+class AccessControlSolutions:
+    """
+    Secure implementations that fix the access control vulnerabilities.
+    """
+
+    def require_auth(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            token = request.headers.get('Authorization')
+            if not token or not token.startswith('Bearer '):
+                return jsonify({'error': 'Authentication required'}), 401
+            
+            try:
+                token = token.split(' ')[1]
+                payload = jwt.decode(token, app.secret_key, algorithms=['HS256'])
+                request.current_user = payload
+                return f(*args, **kwargs)
+            except jwt.InvalidTokenError:
+                return jsonify({'error': 'Invalid token'}), 401
+        return decorated_function
+
+    def require_admin(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if request.current_user.get('role') != 'admin':
+                return jsonify({'error': 'Admin access required'}), 403
+            return f(*args, **kwargs)
+        return decorated_function
+
+    @staticmethod
+    @app.route('/secure/admin/dashboard')
+    @require_auth
+    @require_admin
+    def secure_admin_dashboard():
+        return jsonify({
+            'message': 'Welcome to admin dashboard',
+            'user_count': len(users_db)
+        })
+
+    @staticmethod
+    @app.route('/secure/user/profile')
+    @require_auth
+    def secure_user_profile():
+        user_id = request.current_user['user_id']
+        user = users_db.get(user_id)
+        if user:
+            return jsonify({k: v for k, v in user.items() if k != 'password'})
+        return jsonify({'error': 'User not found'}), 404
+
+    @staticmethod
+    @app.route('/secure/account/<int:account_id>/balance')
+    @require_auth
+    def secure_account_balance(account_id):
+        user_id = request.current_user['user_id']
+        if account_id != user_id and request.current_user.get('role') != 'admin':
+            return jsonify({'error': 'Access denied'}), 403
+        
+        balances = {1: 50000, 2: 30000, 3: 75000}
+        balance = balances.get(account_id)
+        if balance is not None:
+            return jsonify({'account_id': account_id, 'balance': balance})
+        return jsonify({'error': 'Account not found'}), 404
+
+    @staticmethod
+    @app.route('/secure/login', methods=['POST'])
+    def secure_login():
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        
+        user = next((u for u in users_db.values() if u['username'] == username), None)
+        if user and password == 'correct_password':  # Simplified for demo
+            token = jwt.encode({
+                'user_id': user['id'],
+                'role': user['role'],
+                'exp': datetime.utcnow() + timedelta(hours=1)
+            }, app.secret_key, algorithm='HS256')
+            return jsonify({'token': token})
+        return jsonify({'error': 'Invalid credentials'}), 401
+
+
 if __name__ == '__main__':
 
     app.run(debug=True, port=5002)

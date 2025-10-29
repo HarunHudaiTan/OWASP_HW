@@ -2,22 +2,16 @@
 A03: Injection Examples
 OWASP Top 10 2021
 
-This module demonstrates common injection vulnerabilities for educational purposes.
-These are intentionally vulnerable implementations - DO NOT use in production!
+Simple SQL injection demonstration with one vulnerable endpoint.
+DO NOT use in production!
 """
 
 from flask import Flask, request, jsonify
 import sqlite3
-import os
 
 app = Flask(__name__)
 
 class InjectionDemo:
-    """
-    Demonstration class showing common injection vulnerabilities.
-    Contains intentional security flaws for educational purposes.
-    """
-    
     def __init__(self):
         self.db_name = "users.db"
         self.init_database()
@@ -27,7 +21,6 @@ class InjectionDemo:
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         
-        # Create users table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,23 +28,20 @@ class InjectionDemo:
                 email TEXT NOT NULL,
                 password TEXT NOT NULL,
                 role TEXT DEFAULT 'user',
-                salary INTEGER DEFAULT 0,
-                ssn TEXT
+                salary INTEGER DEFAULT 0
             )
         ''')
         
-        # Insert sample data
+        # Clear and insert sample data
+        cursor.execute('DELETE FROM users')
         sample_users = [
-            ('admin', 'admin@company.com', 'admin123', 'admin', 150000, '123-45-6789'),
-            ('alice', 'alice@company.com', 'password123', 'user', 75000, '987-65-4321'),
-            ('bob', 'bob@company.com', 'secret456', 'user', 65000, '555-12-3456'),
-            ('charlie', 'charlie@company.com', 'mypass789', 'manager', 95000, '111-22-3333')
+            ('admin', 'admin@company.com', 'admin123', 'admin', 150000),
+            ('alice', 'alice@company.com', 'password123', 'user', 75000),
+            ('bob', 'bob@company.com', 'secret456', 'user', 65000)
         ]
         
-        cursor.execute('DELETE FROM users')  # Clear existing data
-        cursor.execute('DELETE FROM sqlite_sequence WHERE name="users"')  # Reset auto-increment
         cursor.executemany(
-            'INSERT INTO users (username, email, password, role, salary, ssn) VALUES (?, ?, ?, ?, ?, ?)',
+            'INSERT INTO users (username, email, password, role, salary) VALUES (?, ?, ?, ?, ?)',
             sample_users
         )
         
@@ -65,13 +55,12 @@ demo = InjectionDemo()
 @app.route('/api/user/<user_id>')
 def get_user(user_id):
     """
-    Endpoint to retrieve user information by ID.
-    Simple user lookup functionality for the application.
+    VULNERABLE: Get user by ID - susceptible to SQL injection
     """
     conn = sqlite3.connect(demo.db_name)
     cursor = conn.cursor()
     
-    # Direct query construction - simple and efficient
+    # VULNERABLE: Direct string concatenation allows SQL injection
     query = f"SELECT id, username, email, role FROM users WHERE id = {user_id}"
     
     try:
@@ -79,13 +68,12 @@ def get_user(user_id):
         result = cursor.fetchone()
         
         if result:
-            user_data = {
+            return jsonify({
                 'id': result[0],
                 'username': result[1],
                 'email': result[2],
                 'role': result[3]
-            }
-            return jsonify(user_data)
+            })
         else:
             return jsonify({'error': 'User not found'}), 404
             
@@ -94,11 +82,46 @@ def get_user(user_id):
     finally:
         conn.close()
 
+@app.route('/api/secure/user/<user_id>')
+def get_user_secure(user_id):
+    """
+    SECURE: Get user by ID using parameterized queries
+    """
+    conn = sqlite3.connect(demo.db_name)
+    cursor = conn.cursor()
+    
+    try:
+        # Validate input
+        user_id = int(user_id)
+    except ValueError:
+        return jsonify({'error': 'Invalid user ID format'}), 400
+    
+    # SECURE: Parameterized query prevents SQL injection
+    query = "SELECT id, username, email, role FROM users WHERE id = ?"
+    
+    try:
+        cursor.execute(query, (user_id,))
+        result = cursor.fetchone()
+        
+        if result:
+            return jsonify({
+                'id': result[0],
+                'username': result[1],
+                'email': result[2],
+                'role': result[3]
+            })
+        else:
+            return jsonify({'error': 'User not found'}), 404
+            
+    except Exception as e:
+        return jsonify({'error': 'Database error'}), 500
+    finally:
+        conn.close()
+
 if __name__ == '__main__':
-    print("=== OWASP A03 Injection Demo API ===")
-    print("Available endpoint:")
-    print("GET  /api/user/<id>     - Get user by ID")
-    print("\nStarting server on http://localhost:5002")
-    print("Example: curl http://localhost:5002/api/user/1")
+    print("=== OWASP A03 Injection Demo ===")
+    print("VULNERABLE endpoint: GET /api/user/<id>")
+    print("SECURE endpoint:     GET /api/secure/user/<id>")
+    print("Starting server on http://localhost:5002")
     
     app.run(debug=True, port=5002)

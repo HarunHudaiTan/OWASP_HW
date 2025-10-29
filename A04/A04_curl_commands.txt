@@ -28,3 +28,26 @@ curl http://localhost:5002/user/3
 
 # Vulnerability: No authentication, authorization, or business logic controls
 # Impact: Anyone can transfer money from any account without restrictions
+
+# SECURE ENDPOINTS (Solutions):
+# Test secure transfer (requires user authorization):
+curl -X POST http://localhost:5002/secure/transfer \
+  -H 'Content-Type: application/json' \
+  -H 'X-User-ID: 1' \
+  -d '{"from_account":1,"to_account":2,"amount":100}'
+
+# Test unauthorized transfer (should fail):
+curl -X POST http://localhost:5002/secure/transfer \
+  -H 'Content-Type: application/json' \
+  -H 'X-User-ID: 2' \
+  -d '{"from_account":1,"to_account":2,"amount":100}'
+
+# Test transfer limit (should fail for non-admin):
+curl -X POST http://localhost:5002/secure/transfer \
+  -H 'Content-Type: application/json' \
+  -H 'X-User-ID: 1' \
+  -d '{"from_account":1,"to_account":2,"amount":1500}'
+
+# Test secure user lookup with access control:
+curl http://localhost:5002/secure/user/1 -H 'X-User-ID: 1'
+curl http://localhost:5002/secure/user/2 -H 'X-User-ID: 1'
