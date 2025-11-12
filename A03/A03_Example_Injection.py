@@ -61,6 +61,7 @@ def get_user(user_id):
     cursor = conn.cursor()
     
     # VULNERABLE: Direct string concatenation allows SQL injection
+    user_id=int(user_id)
     query = f"SELECT id, username, email, role FROM users WHERE id = {user_id}"
     
     try:
@@ -90,11 +91,11 @@ def get_user_secure(user_id):
     conn = sqlite3.connect(demo.db_name)
     cursor = conn.cursor()
     
-    try:
-        # Validate input
-        user_id = int(user_id)
-    except ValueError:
-        return jsonify({'error': 'Invalid user ID format'}), 400
+    # try:
+    #     # Validate input
+    #     user_id = int(user_id)
+    # except ValueError:
+    #     return jsonify({'error': 'Invalid user ID format'}), 400
     
     # SECURE: Parameterized query prevents SQL injection
     query = "SELECT id, username, email, role FROM users WHERE id = ?"

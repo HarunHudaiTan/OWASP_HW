@@ -12,23 +12,31 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
+
 @app.route('/process_xml', methods=['POST'])
 def process_xml():
-    """
-    Process XML data using vulnerable XML parser.
-    Uses default XML parser without security settings.
-    """
-    import xml.etree.ElementTree as ET
-    
+    from lxml import etree
+
     xml_data = request.data
-    
-    # Vulnerable XML parsing - susceptible to XXE attacks
+
     try:
-        root = ET.fromstring(xml_data)
-        return jsonify({"message": f"Processed XML with root: {root.tag}"})
+        # VULNERABLE: lxml with resolve_entities=True
+        parser = etree.XMLParser(resolve_entities=True, no_network=False)
+        root = etree.fromstring(xml_data, parser=parser)
+
+        # Extract content to display XXE results
+        result = {
+            "message": f"Processed XML with root: {root.tag}",
+            "data": {}
+        }
+
+        # Get text content from all elements
+        for child in root:
+            result["data"][child.tag] = child.text
+
+        return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 400
-
 @app.route('/download')
 def download_file():
     """Download files using potentially vulnerable requests library."""

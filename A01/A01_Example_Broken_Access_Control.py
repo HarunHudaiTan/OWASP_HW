@@ -20,16 +20,46 @@ posts_db = {
 
 
 class AccessControlExamples:
+    def require_admin(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if request.current_user.get('role') != 'admin':
+                return jsonify({'error': 'Admin access required'}), 403
+            return f(*args, **kwargs)
+
+        return decorated_function
+
+    def require_auth(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            token = request.headers.get('Authorization')
+            if not token or not token.startswith('Bearer '):
+                return jsonify({'error': 'Authentication required'}), 401
+
+            try:
+                token = token.split(' ')[1]
+                payload = jwt.decode(token, app.secret_key, algorithms=['HS256'])
+                request.current_user = payload
+                return f(*args, **kwargs)
+            except jwt.InvalidTokenError:
+                return jsonify({'error': 'Invalid token'}), 401
+
+        return decorated_function
 
     # Example 1: Violation of the principle of least privilege or deny by default
     @staticmethod
     @app.route('/admin/dashboard')
+    # @require_auth
+    # @require_admin
+
     def admin_dashboard():
         return jsonify({
             'message': 'Welcome to admin dashboard',
             'users': users_db,
             'system_config': {'debug': True, 'api_keys': ['secret123']}
         })
+
+
 
     # Example 2: Bypassing access control checks (parameter tampering)
     @staticmethod
@@ -145,34 +175,12 @@ class AccessControlSolutions:
     Secure implementations that fix the access control vulnerabilities.
     """
 
-    def require_auth(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            token = request.headers.get('Authorization')
-            if not token or not token.startswith('Bearer '):
-                return jsonify({'error': 'Authentication required'}), 401
-            
-            try:
-                token = token.split(' ')[1]
-                payload = jwt.decode(token, app.secret_key, algorithms=['HS256'])
-                request.current_user = payload
-                return f(*args, **kwargs)
-            except jwt.InvalidTokenError:
-                return jsonify({'error': 'Invalid token'}), 401
-        return decorated_function
 
-    def require_admin(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if request.current_user.get('role') != 'admin':
-                return jsonify({'error': 'Admin access required'}), 403
-            return f(*args, **kwargs)
-        return decorated_function
+
 
     @staticmethod
     @app.route('/secure/admin/dashboard')
-    @require_auth
-    @require_admin
+
     def secure_admin_dashboard():
         return jsonify({
             'message': 'Welcome to admin dashboard',
@@ -181,7 +189,7 @@ class AccessControlSolutions:
 
     @staticmethod
     @app.route('/secure/user/profile')
-    @require_auth
+    # @require_auth
     def secure_user_profile():
         user_id = request.current_user['user_id']
         user = users_db.get(user_id)
@@ -191,7 +199,7 @@ class AccessControlSolutions:
 
     @staticmethod
     @app.route('/secure/account/<int:account_id>/balance')
-    @require_auth
+    # @require_auth
     def secure_account_balance(account_id):
         user_id = request.current_user['user_id']
         if account_id != user_id and request.current_user.get('role') != 'admin':
